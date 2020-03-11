@@ -1,3 +1,7 @@
+import torch
+import torch.nn as nn
+from functools import partial
+
 class DistillationLearner():
     def __init__(self, teacher, student, data, loss_fn, opt):
         self.teacher = teacher
@@ -7,24 +11,38 @@ class DistillationLearner():
         self.opt = opt
 
     def fit(self, epochs):
-        for epoch in range(epochs):
-            self.student.train()
-            self.teacher.eval()
-            for xb, yb in self.data.train_dl:
-                teacher_output = self.teacher(yb) # move to cpu
+        self.student.train()
+        self.teacher.eval()
+        teacher_output = self.get_teacher_output(self.teacher, self.data.train_dl)
 
-                loss = self.loss_fn(self.teacher(xb), yb, teacher_output)
+        for epoch in range(epochs):
+            for i, (xb, yb) in enumerate(self.data.train_dl):
+                
+                tb = teacher_output[i]
+                # expects a partial loss fn
+                loss = self.loss_fn(self.student(xb), yb, tb)
                 loss.backward()
                 self.opt.step()
                 self.opt.zero_grad()
 
             with torch.no_grad():
+                tot_loss = 0.
+                for i, (xb, yb) in enumerate(self.data.valid_dl):
+                    tb = teacher_output[i]
+                    pred = self.student(xb)
+                    tot_loss += self.loss_fn(self.student(xb), yb, tb)
+                    nv = len(self.data.valid_dl)
+                    print(epoch, tot_loss/nv)
 
-    def get_teacher_outputs(self, teacher, dataloader):
+        return tot_loss/nv
+
+
+    def get_teacher_output(self, teacher, dl):
         teacher.eval()
-        outputs = []
+        output = []
+        for i, (xb, _ ) in enumerate(dl):
+            xb.cpu()
+            out = teacher(xb)
+            output.append(out)
         
-
-
-
-
+        return output
