@@ -19,7 +19,6 @@ def unweight_kd_loss_fn(outputs, labels, teacher_outputs, T, alpha):
     '''
     knowledge distillation loss with soft and hard targets just adjusting distillation loss
     '''
-    alpha = nn.Parameter(torch.ones(1))
     soft_loss = nn.KLDivLoss()( F.log_softmax(outputs/T, dim=1), F.softmax(teacher_outputs/T, dim=1))
     soft_loss = soft_loss * alpha
     hard_loss = F.cross_entropy(outputs, labels)
