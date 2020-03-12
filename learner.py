@@ -13,12 +13,11 @@ class DistillationLearner():
     def fit(self, epochs):
         self.student.train()
         self.teacher.eval()
-        teacher_output = self.get_teacher_output(self.teacher, self.data.train_dl)
 
         for epoch in range(epochs):
-            for i, (xb, yb) in enumerate(self.data.train_dl):
+            for xb, yb in self.data.train_dl:
                 
-                tb = teacher_output[i]
+                tb = self.teacher(xb)
                 # expects a partial loss fn
                 loss = self.loss_fn(self.student(xb), yb, tb)
                 loss.backward()
@@ -27,9 +26,8 @@ class DistillationLearner():
 
             with torch.no_grad():
                 tot_loss = 0.
-                for i, (xb, yb) in enumerate(self.data.valid_dl):
-                    tb = teacher_output[i]
-                    pred = self.student(xb)
+                for xb, yb in self.data.valid_dl:
+                    tb = self.teacher(xb)
                     tot_loss += self.loss_fn(self.student(xb), yb, tb)
                     nv = len(self.data.valid_dl)
                     print(epoch, tot_loss/nv)
