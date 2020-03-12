@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from functools import partial
+from tqdm import tqdm
 
 class DistillationLearner():
     def __init__(self, teacher, student, data, loss_fn, opt):
@@ -15,7 +16,7 @@ class DistillationLearner():
         self.teacher.eval()
 
         for epoch in range(epochs):
-            for xb, yb in self.data.train_dl:
+            for xb, yb in tqdm(self.data.train_dl):
                 
                 tb = self.teacher(xb)
                 # expects a partial loss fn
